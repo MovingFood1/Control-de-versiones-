@@ -1,0 +1,183 @@
+-- Tabla de Usuarios/Vendedores
+CREATE TABLE maestro_usuarios (
+    id_usuario INT PRIMARY KEY AUTO_INCREMENT,
+    nombre_usuario VARCHAR(100) NOT NULL,
+    gerencia VARCHAR(50),
+    area VARCHAR(50),
+    cargo VARCHAR(50),
+    ruta VARCHAR(50),
+    zona VARCHAR(50),
+    region VARCHAR(50),
+    nombre_region VARCHAR(100),
+    orden_region INT,
+    ciudad VARCHAR(50),
+    sala VARCHAR(50),
+    supervisor VARCHAR(100),
+    vigente BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Tabla de Clientes
+CREATE TABLE maestro_clientes (
+    id_cliente INT PRIMARY KEY AUTO_INCREMENT,
+    tipo_compania VARCHAR(20),
+    tipo_direccion VARCHAR(20),
+    rut VARCHAR(20),
+    nombre_cliente VARCHAR(100) NOT NULL,
+    dia_visita VARCHAR(20),
+    calle VARCHAR(100),
+    comuna VARCHAR(50),
+    ciudad VARCHAR(50),
+    region VARCHAR(50),
+    pais VARCHAR(50),
+    fecha_creacion DATE,
+    limite_credito DECIMAL(15,2),
+    plazo_pago VARCHAR(50),
+    tarifa VARCHAR(50),
+    es_cliente BOOLEAN DEFAULT FALSE,
+    es_proveedor BOOLEAN DEFAULT FALSE,
+    latitud DECIMAL(10,8),
+    longitud DECIMAL(11,8),
+    cliente_padre_id INT,
+    cliente_matriz_id INT,
+    compania_id INT,
+    categoria_cliente VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (cliente_padre_id) REFERENCES maestro_clientes(id_cliente),
+    FOREIGN KEY (cliente_matriz_id) REFERENCES maestro_clientes(id_cliente)
+);
+
+-- Tabla de Productos
+CREATE TABLE maestro_productos (
+    id_producto INT PRIMARY KEY AUTO_INCREMENT,
+    referencia_producto VARCHAR(50),
+    nombre_producto VARCHAR(100) NOT NULL,
+    um VARCHAR(20),
+    precio_unitario DECIMAL(15,2),
+    costo_unitario DECIMAL(15,2),
+    puede_ser_vendido BOOLEAN DEFAULT TRUE,
+    puede_ser_comprado BOOLEAN DEFAULT TRUE,
+    fecha_creacion DATE,
+    categoria_odoo VARCHAR(50),
+    marca_producto VARCHAR(50),
+    marca_cobertura VARCHAR(50),
+    categoria_producto VARCHAR(50),
+    subcategoria_producto VARCHAR(50),
+    vigente BOOLEAN DEFAULT TRUE,
+    formato_venta VARCHAR(50),
+    comision_general DECIMAL(5,2),
+    comision_callcenter DECIMAL(5,2),
+    comision_mercadogeneral DECIMAL(5,2),
+    origen VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Tabla de Impuestos
+CREATE TABLE impuestos (
+    id_impuesto INT PRIMARY KEY AUTO_INCREMENT,
+    nombre_impuesto VARCHAR(50) NOT NULL,
+    tipo_impuesto VARCHAR(50),
+    compania_id INT,
+    valor DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Tabla de Fechas de Vencimiento de Productos
+CREATE TABLE fechas_vencimiento_productos (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    id_producto INT NOT NULL,
+    referencia_producto VARCHAR(50),
+    nombre_producto VARCHAR(100),
+    bodega VARCHAR(50),
+    fecha1 DATE,
+    fecha2 DATE,
+    fecha3 DATE,
+    fecha4 DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_producto) REFERENCES maestro_productos(id_producto)
+);
+
+-- Tabla de Cabecera de Pedidos
+CREATE TABLE cabecera_pedidos (
+    id_pedido INT PRIMARY KEY AUTO_INCREMENT,
+    referencia_cliente VARCHAR(100),
+    fecha_creacion DATETIME,
+    monto_neto DECIMAL(15,2),
+    impuestos DECIMAL(15,2),
+    monto_total DECIMAL(15,2),
+    estado_pedido VARCHAR(50),
+    estado_facturacion VARCHAR(50),
+    comentarios TEXT,
+    fecha_orden DATETIME,
+    fecha_entrega DATE,
+    vendedor VARCHAR(100),
+    excepcion VARCHAR(100),
+    tarifa VARCHAR(50),
+    plazo_pago VARCHAR(50),
+    cliente_id INT,
+    cliente_facturacion_id INT,
+    direccion_entrega_id INT,
+    dia_visita VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (cliente_id) REFERENCES maestro_clientes(id_cliente),
+    FOREIGN KEY (cliente_facturacion_id) REFERENCES maestro_clientes(id_cliente),
+    FOREIGN KEY (direccion_entrega_id) REFERENCES maestro_clientes(id_cliente)
+);
+
+-- Tabla de Detalle de Pedidos
+CREATE TABLE detalle_pedidos (
+    id_linea_pedido INT PRIMARY KEY AUTO_INCREMENT,
+    id_producto INT NOT NULL,
+    cantidad DECIMAL(10,2),
+    precio DECIMAL(15,2),
+    subtotal DECIMAL(15,2),
+    descuento DECIMAL(5,2),
+    total DECIMAL(15,2),
+    id_pedido INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_producto) REFERENCES maestro_productos(id_producto),
+    FOREIGN KEY (id_pedido) REFERENCES cabecera_pedidos(id_pedido)
+);
+
+-- Tabla de Pagos
+CREATE TABLE pagos (
+    id_pago INT PRIMARY KEY AUTO_INCREMENT,
+    id_factura INT,
+    monto_pago DECIMAL(15,2),
+    fecha_pago DATE,
+    metodo_pago VARCHAR(50),
+    referencia_pago VARCHAR(100),
+    estado_pago VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_factura) REFERENCES cabecera_facturas(id_factura)
+);
+
+-- Vista para Reporte de Ventas
+CREATE VIEW vista_reporte_ventas AS
+SELECT 
+    cp.id_pedido,
+    cp.fecha_creacion,
+    cp.vendedor,
+    mc.nombre_cliente,
+    mc.rut,
+    mc.region,
+    cp.monto_total,
+    cp.estado_pedido,
+    COUNT(dp.id_linea_pedido) AS items,
+    SUM(dp.cantidad) AS cantidad_total
+FROM 
+    cabecera_pedidos cp
+JOIN 
+    maestro_clientes mc ON cp.cliente_id = mc.id_cliente
+JOIN 
+    detalle_pedidos dp ON cp.id_pedido = dp.id_pedido
+GROUP BY 
+    cp.id_pedido, cp.fecha_creacion, cp.vendedor, mc.nombre_cliente, mc.rut, mc.region, cp.monto_total, cp.estado_pedido;
