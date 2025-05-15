@@ -1,5 +1,5 @@
--- Seleccionar la base de datos (reemplazar "database_name" con el nombre de tu base de datos)
-USE database_name;
+CREATE DATABASE IF NOT EXISTS sistema_ventas;
+USE sistema_ventas;
 
 -- Tabla de Usuarios/Vendedores
 CREATE TABLE maestro_usuarios (
@@ -105,7 +105,7 @@ CREATE TABLE fechas_vencimiento_productos (
     FOREIGN KEY (id_producto) REFERENCES maestro_productos(id_producto)
 );
 
--- Tabla de Cabecera de Pedidos
+-- Primero crear cabecera_pedidos sin la referencia a cabecera_facturas
 CREATE TABLE cabecera_pedidos (
     id_pedido INT PRIMARY KEY AUTO_INCREMENT,
     referencia_cliente VARCHAR(100),
@@ -133,6 +133,23 @@ CREATE TABLE cabecera_pedidos (
     FOREIGN KEY (direccion_entrega_id) REFERENCES maestro_clientes(id_cliente)
 );
 
+-- Luego crear cabecera_facturas que referencia a cabecera_pedidos
+CREATE TABLE cabecera_facturas (
+    id_factura INT PRIMARY KEY AUTO_INCREMENT,
+    id_pedido INT,
+    numero_factura VARCHAR(50),
+    fecha_factura DATE,
+    monto_neto DECIMAL(15,2),
+    impuestos DECIMAL(15,2),
+    monto_total DECIMAL(15,2),
+    estado_factura VARCHAR(50),
+    cliente_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_pedido) REFERENCES cabecera_pedidos(id_pedido),
+    FOREIGN KEY (cliente_id) REFERENCES maestro_clientes(id_cliente)
+);
+
 -- Tabla de Detalle de Pedidos
 CREATE TABLE detalle_pedidos (
     id_linea_pedido INT PRIMARY KEY AUTO_INCREMENT,
@@ -149,7 +166,7 @@ CREATE TABLE detalle_pedidos (
     FOREIGN KEY (id_pedido) REFERENCES cabecera_pedidos(id_pedido)
 );
 
--- Tabla de Pagos
+-- Finalmente crear pagos que referencia a cabecera_facturas
 CREATE TABLE pagos (
     id_pago INT PRIMARY KEY AUTO_INCREMENT,
     id_factura INT,
@@ -159,7 +176,8 @@ CREATE TABLE pagos (
     referencia_pago VARCHAR(100),
     estado_pago VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_factura) REFERENCES cabecera_facturas(id_factura)
 );
 
 -- Vista para Reporte de Ventas
