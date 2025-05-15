@@ -1,3 +1,6 @@
+-- Seleccionar la base de datos (reemplazar "database_name" con el nombre de tu base de datos)
+USE database_name;
+
 -- Tabla de Usuarios/Vendedores
 CREATE TABLE maestro_usuarios (
     id_usuario INT PRIMARY KEY AUTO_INCREMENT,
@@ -156,8 +159,7 @@ CREATE TABLE pagos (
     referencia_pago VARCHAR(100),
     estado_pago VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_factura) REFERENCES cabecera_facturas(id_factura)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Vista para Reporte de Ventas
